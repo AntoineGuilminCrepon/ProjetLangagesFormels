@@ -21,9 +21,7 @@ typedef struct proc // a process
 {
 	char *name;
 	struct var *var_loc;
-	int *loop_depth;
-	struct stmt *prog;
-	struct stmt *current;
+	struct stmt *exec;
 	struct proc *next;
 } proc;
 
@@ -31,7 +29,6 @@ typedef struct var	// a variable
 {
 	char *name;
 	int value;
-	struct proc *proc;
 	struct var *next;
 } var;
 
@@ -68,13 +65,12 @@ cond *program_conditions;
 /****************************************************************************/
 /* Functions for settting up data structures at parse time.                 */
 
-proc *make_proc (char *s, int *var_loc, stmt *prog, proc *next)
+proc *make_proc (char *s, var *var_loc, stmt *exec, proc *next)
 {
 	proc *p = malloc(sizeof(proc));
 	p->name = s;
 	p->var_loc = var_loc;
-	p->prog = prog;
-	p->current = prog;
+	p->exec = exec;
 	p->next = next;
 	return p;
 }
@@ -150,16 +146,17 @@ cond* make_cond (expr *expr, cond* next)
 %type <s> stmt assign stmtcase
 %type <p> proc prog
 %type <cd> condition 
-%token PROC END VAR ASSIGN DO BREAK OD IF FI GARD ARROW ELSE PLUS MINUS EQUAL AND OR REACH
+%token PROC END VAR ASSIGN DO BREAK OD IF FI GARD ARROW ELSE REACH
 %token <c> ID
 %token <i> INT
 
 %left ';'
-
+%left EQUAL
+%left AND OR PLUS MINUS NOT
 
 %%
 
-prog	: vars proc condition { program_procs = $2; program_conditions = $3}
+prog	: vars proc condition { program_procs = $2; program_conditions = $3; }
 
 vars	: VAR declist ';'	{ program_vars = $2; }
 
@@ -187,7 +184,7 @@ assign	: ID ASSIGN expr
 stmtcase: GARD expr ARROW stmt stmtcase
 		{ $$ = make_stmt(GARD, NULL, $2, $4, $5); }
 	| GARD expr ARROW stmt
-		{ $$ = make_stmt(GARD, NULL, $2, $4, $5); }
+		{ $$ = make_stmt(GARD, NULL, $2, $4, NULL); }
 
 expr	: ID			{ $$ = make_expr(0,find_ident($1),NULL,NULL,NULL); }
 	| INT				{ $$ = make_expr(1,NULL,&$1,NULL,NULL); }
@@ -195,6 +192,7 @@ expr	: ID			{ $$ = make_expr(0,find_ident($1),NULL,NULL,NULL); }
 	| expr AND expr		{ $$ = make_expr(AND,NULL,NULL,$1,$3); }
 	| expr PLUS expr	{ $$ = make_expr(PLUS,NULL,NULL,$1,$3); }
 	| expr MINUS expr	{ $$ = make_expr(MINUS,NULL,NULL,$1,$3); }
+	| NOT expr			{ $$ = make_expr(NOT,NULL,NULL,NULL,$2); }
 	| ELSE				{ $$ = make_expr(ELSE,NULL,NULL,NULL,NULL); }
 	| '(' expr ')'		{ $$ = $2; }
 
@@ -210,66 +208,117 @@ condition : REACH expr condition
 /****************************************************************************/
 /* programme interpreter      :                                             */
 
-int eval (expr *e)
+void print_vars(var *v, int depth)
+{
+	struct var *current = v;
+	for (int i=0; i<depth; i++) {
+		printf("	");
+	}
+	printf("var ");
+	while (current->next) {
+		printf("%s, ", current->name);
+		current = current->next;
+	}
+}
+
+void print_expr (expr *e)
 {
 	switch (e->type)
 	{
-		case EQUAL: return eval(e->left) == eval(e->right);
-		case AND: return eval(e->left) && eval(e->right);
-		case PLUS: return eval(e->left) + eval(e->right);
-		case MINUS: return eval(e->left) - eval(e->right);
-		case 1: return *e->val;
-		case 0: return e->var->value;
+		case EQUAL: 
+			print_expr(e->left);
+			printf(" == ");
+			print_expr(e->right);
+			break;
+		case AND: 
+			print_expr(e->left);
+			printf(" && ");
+			print_expr(e->right);
+			break;
+		case PLUS: 
+			print_expr(e->left);
+			printf(" + ");
+			print_expr(e->right);
+			break;
+		case MINUS: 
+			print_expr(e->left);
+			printf(" - ");
+			print_expr(e->right);
+			break;
+		case NOT:
+			printf("!");
+			print_expr(e->right);
+		case 1:
+			printf("%i", *e->val);
+			break;
+		case 0: 
+			printf("%s", e->var->name);
+			break;
 	}
 }
 
-void execute (stmt *s)
+void print_stmt (stmt *s, int depth)
 {
-	int local_loop;
+	for (int i=0; i<depth; i++) {
+		printf("	");
+	}
 	switch(s->type)
 	{
 		case ASSIGN:
-			s->var->value = eval(s->expr);
+			printf("%s := ", s->var->name);
+			print_expr(s->expr);
+			printf(";\n");
 			break;
 		case GARD:
-			if (eval(s->expr)) execute(s->left);
-			else execute(s->right);
+			printf(":: ");
+			print_expr(s->expr);
+			printf(" ->\n");
+			print_stmt(s->left, depth+1);
+			if (s->right) {
+				print_stmt(s->right, depth+1);
+			}
 			break;
 		case ';':
-			execute(s->left);
-			execute(s->right);
+			print_stmt(s->left, depth);
+			print_stmt(s->right, depth);
 			break;
 		case DO:
-			loop_depth++;
-			if (loop_depth)
-			{
-			execute(s->left)
-			};
+			printf("do\n");
+			print_stmt(s->left, depth+1);
+			printf("od\n");
 			break;
 		case IF:
-			execute(s->left);
+			printf("if\n");
+			print_stmt(s->left, depth+1);
+			printf("fi\n");
 			break;
 		case BREAK:
-
+			printf("break\n");
+			break;
 	}
 }
 
 
 
-void execute_proc(proc *p)
+void print_proc (proc *p)
 {
-	srand(time(0));
-	int i = rand() % 2;
-	if (i == 0)
-	{
-		execute(p->current);
-		p->current = p->current->right;
-		check_reached(program_conditions);
-		execute_proc(program_procs);
+	printf("proc %s\n", p->name);
+	print_vars(p->var_loc, 1);
+	print_stmt(p->exec, 1);
+	printf("	end\n");
+	if (p->next) {
+		print_proc(p->next);
 	}
-	else
-	{
-		execute_proc(p->next)
+}
+
+void print_cond (cond *c)
+{
+	struct cond *current;
+	while (current->next) {
+		printf("reach ");
+		print_expr(current->expr);
+		printf("\n");
+		current = current->next;
 	}
 }
 
@@ -279,5 +328,9 @@ int main (int argc, char **argv)
 {
 	if (argc <= 1) { yyerror("no file specified"); exit(1); }
 	yyin = fopen(argv[1],"r");
-	if (!yyparse()) execute_proc(program_procs);
+	if (!yyparse()) {
+		print_vars(program_vars, 0);
+		print_proc(program_procs);
+	}
+	return 0;
 }

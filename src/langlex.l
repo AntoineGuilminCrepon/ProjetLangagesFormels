@@ -1,4 +1,4 @@
-%option no yywrap
+%option noyywrap
 
 DIG	[0-9]
 ALP	[a-zA-Z]
@@ -26,10 +26,9 @@ ALP	[a-zA-Z]
 
 {DIG}+		{ yylval.i = atoi(yytext);
 				return INT; }
-{ALP}+		{ yylval.c = yytext; 
+[a-z_][a-z0-9_]*  { yylval.c = strdup(yytext); 
 				return ID; }
 "//".*"\n"	{}
 [	 \n]	{}
-.			{}
 
 %%
