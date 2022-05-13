@@ -141,10 +141,10 @@ cond* make_cond (expr *expr, cond* next)
 	cond *cd;
 }
 
-%type <v> declist
+%type <v> declist vars_proc
 %type <e> expr
 %type <s> stmt assign stmtcase
-%type <p> proc prog
+%type <p> proc
 %type <cd> condition 
 %token PROC END VAR ASSIGN DO BREAK OD IF FI GARD ARROW ELSE REACH
 %token <c> ID
@@ -160,15 +160,19 @@ prog	: vars proc condition { program_procs = $2; program_conditions = $3; }
 
 vars	: VAR declist ';'	{ program_vars = $2; }
 
-declist	: ID			{ $$ = make_ident($1); }
-	| declist ',' ID	{ ($$ = make_ident($3))->next = $1; }
+vars_proc	: VAR declist ';'	{ $$ = $2; }
 
-proc	: PROC ID VAR declist stmt END proc
-		{ $$ = make_proc($2, $4, $5, $7); }
+declist	: ID			{ $$ = make_ident($1); }
+	| ID ',' declist	{ ($$ = make_ident($1))->next = $3; }
+
+proc	: PROC ID vars_proc stmt END proc
+		{ $$ = make_proc($2, $3, $4, $6); }
 	| PROC ID VAR declist stmt END
 		{ $$ = make_proc($2, $4, $5, NULL); }
 
 stmt	: assign
+	| stmt ';'
+		{ $$ = $1; }
 	| stmt ';' stmt	
 		{ $$ = make_stmt(';',NULL,NULL,$1,$3); }
 	| DO stmtcase OD
