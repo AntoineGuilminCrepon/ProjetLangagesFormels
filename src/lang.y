@@ -194,6 +194,7 @@ expr	: ID			{ $$ = make_expr(0,find_ident($1),NULL,NULL,NULL); }
 	| INT				{ $$ = make_expr(1,NULL,&$1,NULL,NULL); }
 	| expr EQUAL expr	{ $$ = make_expr(EQUAL,NULL,NULL,$1,$3); }
 	| expr AND expr		{ $$ = make_expr(AND,NULL,NULL,$1,$3); }
+	| expr OR expr 		{ $$ = make_expr(OR,NULL,NULL,$1,$3); }
 	| expr PLUS expr	{ $$ = make_expr(PLUS,NULL,NULL,$1,$3); }
 	| expr MINUS expr	{ $$ = make_expr(MINUS,NULL,NULL,$1,$3); }
 	| NOT expr			{ $$ = make_expr(NOT,NULL,NULL,NULL,$2); }
@@ -239,6 +240,10 @@ void print_expr (expr *e)
 			printf(" && ");
 			print_expr(e->right);
 			break;
+		case OR:
+			print_expr(e->left);
+			printf(" || ");
+			print_expr(e->right);
 		case PLUS: 
 			print_expr(e->left);
 			printf(" + ");
