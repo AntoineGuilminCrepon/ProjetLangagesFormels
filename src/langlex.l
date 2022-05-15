@@ -17,6 +17,7 @@ DIG	[0-9]
 "end"	{ return END; }
 "reach"	{ return REACH; }
 "break" { return BREAK; }
+"skip"	{ return SKIP; }
 
 "+"		{ return PLUS; }
 "-"		{ return MINUS; }
@@ -24,7 +25,6 @@ DIG	[0-9]
 "&&"	{ return AND; }
 "||"	{ return OR; }
 "!"		{ return NOT; }
-"skip"	{ return SKIP; }
 
 {DIG}+		{ yylval.i = atoi(yytext);
 				return INT; }

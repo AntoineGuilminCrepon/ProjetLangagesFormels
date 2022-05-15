@@ -365,12 +365,12 @@ struct yy_trans_info
 	};
 static const flex_int16_t yy_accept[64] =
     {   0,
-        0,    0,   27,   25,   24,   24,   19,   25,   14,   15,
+        0,    0,   27,   25,   24,   24,   20,   25,   15,   16,
        25,   21,   25,   25,   22,   22,   22,   22,   22,   22,
-       22,   22,   22,   22,   22,   25,   17,    9,    0,   21,
-        8,    3,   16,   22,   22,    4,   22,   22,    7,    6,
-        5,   22,   22,   22,   22,   18,    0,   23,   22,   22,
-       11,   22,   22,   22,    2,   22,   10,    1,   22,   20,
+       22,   22,   22,   22,   22,   25,   18,    9,    0,   21,
+        8,    3,   17,   22,   22,    4,   22,   22,    7,    6,
+        5,   22,   22,   22,   22,   19,    0,   23,   22,   22,
+       11,   22,   22,   22,    2,   22,   10,    1,   22,   14,
        13,   12,    0
     } ;
 
@@ -826,38 +826,38 @@ YY_RULE_SETUP
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 21 "langlex.l"
-{ return PLUS; }
+#line 20 "langlex.l"
+{ return SKIP; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
 #line 22 "langlex.l"
-{ return MINUS; }
+{ return PLUS; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
 #line 23 "langlex.l"
-{ return EQUAL; }
+{ return MINUS; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
 #line 24 "langlex.l"
-{ return AND; }
+{ return EQUAL; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
 #line 25 "langlex.l"
-{ return OR; }
+{ return AND; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
 #line 26 "langlex.l"
-{ return NOT; }
+{ return OR; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
 #line 27 "langlex.l"
-{ return SKIP; }
+{ return NOT; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP

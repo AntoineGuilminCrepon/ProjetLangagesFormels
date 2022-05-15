@@ -177,10 +177,10 @@ vars_proc	: VAR declist ';'	{ $$ = $2; }
 declist	: ID			{ $$ = make_ident($1); }
 	| ID ',' declist	{ ($$ = make_ident($1))->next = $3; }
 
-proc	: PROC ID vars_proc stmt END proc
+proc	: PROC ID VAR declist stmt END
+		{ $$ = make_proc($2, $4, $5, NULL); } 
+	| PROC ID vars_proc stmt END proc
 		{ $$ = make_proc($2, $3, $4, $6); }
-	| PROC ID VAR declist stmt END
-		{ $$ = make_proc($2, $4, $5, NULL); }
 
 stmt	: ID ASSIGN expr
 		{ $$ = make_stmt(ASSIGN,find_ident($1),$3,NULL,NULL); }
@@ -197,10 +197,10 @@ stmt	: ID ASSIGN expr
 	| SKIP
 		{ $$ = make_stmt(SKIP,NULL,NULL,NULL,NULL); }
 
-stmtcase: GARD expr ARROW stmt stmtcase
-		{ $$ = make_stmt(GARD, NULL, $2, $4, $5); }
-	| GARD expr ARROW stmt
+stmtcase: GARD expr ARROW stmt
 		{ $$ = make_stmt(GARD, NULL, $2, $4, NULL); }
+	| GARD expr ARROW stmt stmtcase
+		{ $$ = make_stmt(GARD, NULL, $2, $4, $5); }
 
 expr	: ID			{ $$ = make_expr(0,find_ident($1),NULL,NULL,NULL); }
 	| INT				{ $$ = make_expr(1,NULL,&$1,NULL,NULL); }
@@ -213,10 +213,10 @@ expr	: ID			{ $$ = make_expr(0,find_ident($1),NULL,NULL,NULL); }
 	| ELSE				{ $$ = make_expr(ELSE,NULL,NULL,NULL,NULL); }
 	| '(' expr ')'		{ $$ = $2; }
 
-condition : REACH expr condition 
-		{ $$ = make_cond($2, $3); }
-	| REACH expr 		
+condition : REACH expr 
 		{ $$ = make_cond($2, NULL); }
+	| REACH expr condition 
+		{ $$ = make_cond($2, $3); }
 
 %%
 
