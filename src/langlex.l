@@ -16,12 +16,15 @@ DIG	[0-9]
 "else"	{ return ELSE; }
 "end"	{ return END; }
 "reach"	{ return REACH; }
+"break" { return BREAK; }
 
 "+"		{ return PLUS; }
 "-"		{ return MINUS; }
 "=="	{ return EQUAL; }
 "&&"	{ return AND; }
 "||"	{ return OR; }
+"!"		{ return NOT; }
+"skip"	{ return SKIP; }
 
 {DIG}+		{ yylval.i = atoi(yytext);
 				return INT; }

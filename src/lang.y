@@ -88,7 +88,19 @@ var* find_ident (char *s)
 {
 	var *v = program_vars;
 	while (v && strcmp(v->name,s)) v = v->next;
-	if (!v) { yyerror("undeclared variable"); exit(1); }
+	if (!v) { 
+		proc *p = program_procs;
+		while (p) {
+			v = p->var_loc;
+			while (v && strcmp(v->name,s)) v = v->next;
+			if (!v) {
+				p = p->next;
+			}
+			else {
+				break;
+			}
+		}
+	}
 	return v;
 }
 
@@ -143,10 +155,10 @@ cond* make_cond (expr *expr, cond* next)
 
 %type <v> declist vars_proc
 %type <e> expr
-%type <s> stmt assign stmtcase
+%type <s> stmt stmtcase
 %type <p> proc
 %type <cd> condition 
-%token PROC END VAR ASSIGN DO BREAK OD IF FI GARD ARROW ELSE REACH
+%token PROC END VAR ASSIGN DO BREAK OD IF FI GARD ARROW ELSE REACH SKIP
 %token <c> ID
 %token <i> INT
 
@@ -170,7 +182,8 @@ proc	: PROC ID vars_proc stmt END proc
 	| PROC ID VAR declist stmt END
 		{ $$ = make_proc($2, $4, $5, NULL); }
 
-stmt	: assign
+stmt	: ID ASSIGN expr
+		{ $$ = make_stmt(ASSIGN,find_ident($1),$3,NULL,NULL); }
 	| stmt ';'
 		{ $$ = $1; }
 	| stmt ';' stmt	
@@ -181,9 +194,8 @@ stmt	: assign
 		{ $$ = make_stmt(IF,NULL,NULL,NULL,$2); }
 	| BREAK
 		{ $$ = make_stmt(BREAK,NULL,NULL,NULL,NULL); }
-
-assign	: ID ASSIGN expr
-		{ $$ = make_stmt(ASSIGN,find_ident($1),$3,NULL,NULL); }
+	| SKIP
+		{ $$ = make_stmt(SKIP,NULL,NULL,NULL,NULL); }
 
 stmtcase: GARD expr ARROW stmt stmtcase
 		{ $$ = make_stmt(GARD, NULL, $2, $4, $5); }
@@ -304,6 +316,9 @@ void print_stmt (stmt *s, int depth)
 		case BREAK:
 			printf("break\n");
 			break;
+		case SKIP:
+			printf("skip\n");
+			break;
 	}
 }
 
@@ -340,6 +355,7 @@ int main (int argc, char **argv)
 	if (!yyparse()) {
 		print_vars(program_vars, 0);
 		print_proc(program_procs);
+		print_cond(program_conditions);
 	}
 	return 0;
 }
